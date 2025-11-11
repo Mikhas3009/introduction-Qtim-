@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { UserEntity } from 'src/application/auth/entities/user.entity';
 import { ArticleEntity } from 'src/application/articles/entities/article.entity';
+import { join } from 'path';
 
 @Module({
   imports: [
@@ -19,7 +20,8 @@ import { ArticleEntity } from 'src/application/articles/entities/article.entity'
         autoLoadEntities: true,
         entities: [UserEntity, ArticleEntity],
         synchronize: false,
-        migrationsRun: cfg.get<string>('NODE_ENV') === 'production',
+        migrationsRun: true,
+        migrations: [join(__dirname, 'migrations/*.{ts,js}')],
         logging: true,
       }),
     }),

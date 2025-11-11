@@ -12,4 +12,5 @@ export default new DataSource({
   database: process.env.POSTGRES_DB || 'postgres',
   entities: [join(__dirname, '..', '**', '*.entity.{ts,js}')],
   migrations: [join(__dirname, 'migrations/*.{ts,js}')],
+  migrationsRun: false,
 });

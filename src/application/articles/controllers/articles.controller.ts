@@ -68,7 +68,6 @@ export class ArticlesController {
    *
    * @throws {BadRequestException} Если параметры запроса некорректны
    */
-  @Cache(ARTICLE_CACHE_TTL)
   @Get()
   async list(@Query() query: ListArticleQueryDto): Promise<ArticleEntity[]> {
     return await this.articlesService.list(query);

@@ -14,7 +14,6 @@ import { DeleteArticleParamsDto } from '../dto/delete/deleteArticle.params.dto';
 import { StoreArticleBodyDto } from '../dto/store/storeArticle.body.dto';
 import { UpdateArticleBodyDto } from '../dto/update/updateArticle.body.dto';
 import { UpdateArticleParamsDto } from '../dto/update/updateArticle.params.dto';
-import { UserEntity } from 'src/application/auth/entities/user.entity';
 
 /**
  * Сервис для работы со статьями (CRUD-операции).
@@ -34,7 +33,7 @@ export class ArticlesService {
   constructor(
     @InjectRepository(ArticleEntity)
     private readonly articleRepository: Repository<ArticleEntity>,
-  ) { }
+  ) {}
 
   /**
    * Возвращает список статей с учётом фильтров, сортировки и пагинации.

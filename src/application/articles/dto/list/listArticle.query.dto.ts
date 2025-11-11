@@ -51,6 +51,9 @@ export class ListArticleQueryDto {
 
   @IsOptional()
   @IsBoolean()
+  @Transform(({ value }) =>
+    value === 'true' ? true : value === 'false' ? false : value,
+  )
   includeDeleted?: boolean;
 
   @IsOptional()

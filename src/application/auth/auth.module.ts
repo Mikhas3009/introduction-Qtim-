@@ -18,4 +18,4 @@ import { JwtGuard } from './guards/jwt.guard';
   controllers: [AuthController],
   exports: [JwtGuard, JwtModule],
 })
-export class AuthModule { }
+export class AuthModule {}

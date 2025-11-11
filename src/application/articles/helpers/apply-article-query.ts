@@ -41,7 +41,7 @@ export function applyArticleFilters(
     });
   }
 
-  // полнотекстовый поиск по name/description (простой ILIKE)
+  // полнотекстовый поиск по name/description
   if (data.q) {
     qb.andWhere(
       `(${alias}.article_name ILIKE :q OR ${alias}.article_description ILIKE :q)`,
@@ -68,8 +68,8 @@ export function applyArticleFilters(
   }
 
   // soft-delete
-  if (!data.includeDeleted) {
-    qb.andWhere(`${alias}.deleted_at IS NULL`);
+  if (data.includeDeleted === true) {
+    qb.withDeleted();
   }
 
   // диапазон дат
