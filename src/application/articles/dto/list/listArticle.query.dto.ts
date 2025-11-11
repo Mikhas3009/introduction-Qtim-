@@ -10,8 +10,8 @@ import {
   IsUUID,
   Min,
 } from 'class-validator';
-import { ArticleSortBy } from 'src/core/enums/articleSortBy.enum';
-import { SortOrder } from 'src/core/enums/sortBy.enum';
+import { ArticleSortByEnum } from 'src/core/enums/articleSortBy.enum';
+import { SortOrderEnum } from 'src/core/enums/sortBy.enum';
 
 export class ListArticleQueryDto {
   @IsOptional()
@@ -54,12 +54,12 @@ export class ListArticleQueryDto {
   includeDeleted?: boolean;
 
   @IsOptional()
-  @IsEnum(ArticleSortBy)
-  sortBy?: ArticleSortBy = ArticleSortBy.createdAt;
+  @IsEnum(ArticleSortByEnum)
+  sortBy?: ArticleSortByEnum = ArticleSortByEnum.createdAt;
 
   @IsOptional()
-  @IsEnum(SortOrder)
-  order?: SortOrder = SortOrder.DESC;
+  @IsEnum(SortOrderEnum)
+  order?: SortOrderEnum = SortOrderEnum.DESC;
 
   @IsOptional()
   @Type(() => Number)

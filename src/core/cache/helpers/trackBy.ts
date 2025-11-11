@@ -16,9 +16,13 @@ export function trackBy(
     CACHE_KEY_METADATA,
     context.getHandler(),
   );
-  if (cacheKey) return cacheKey;
 
-  if (!isHttpApp) return undefined;
+  if (cacheKey) {
+    return cacheKey;
+  }
+  if (!isHttpApp) {
+    return undefined;
+  }
   const request = context.switchToHttp().getRequest();
   return allowedMethods.includes(request.method)
     ? String(httpAdapter.getRequestUrl(request))

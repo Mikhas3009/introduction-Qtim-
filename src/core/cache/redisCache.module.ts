@@ -11,7 +11,7 @@ export class RedisCacheModule {
   static forRoot(options: RedisCacheModuleOptions): DynamicModule {
     const store = new RedisCacheStore(
       options.redis,
-      options.defaultTtl ?? 60_000,
+      options.defaultTtl ?? 600_000,
     );
 
     return {

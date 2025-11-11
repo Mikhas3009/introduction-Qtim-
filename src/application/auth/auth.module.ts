@@ -10,12 +10,12 @@ import { JwtGuard } from './guards/jwt.guard';
 
 @Module({
   imports: [
+    ConfigModule.forRoot(),
     JwtModule.registerAsync(getJwtConfig()),
-    ConfigModule,
     TypeOrmModule.forFeature([UserEntity]),
   ],
   providers: [AuthService, JwtGuard],
   controllers: [AuthController],
   exports: [JwtGuard, JwtModule],
 })
-export class AuthModule {}
+export class AuthModule { }

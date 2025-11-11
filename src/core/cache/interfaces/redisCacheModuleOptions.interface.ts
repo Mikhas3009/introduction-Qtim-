@@ -1,6 +1,17 @@
-import { RedisOptions } from "ioredis";
+import { RedisOptions } from 'ioredis';
 
+/**
+ * Опции модуля Redis-кэша.
+ */
 export interface RedisCacheModuleOptions {
-    redis: RedisOptions;
-    defaultTtl?: number;
+  /**
+   * Параметры подключения к Redis (см. ioredis `RedisOptions`).
+   */
+  redis: RedisOptions;
+
+  /**
+   * Дефолтный TTL (в миллисекундах), если при записи не передан явный TTL.
+   * @default 60_000 (1 минута)
+   */
+  defaultTtl?: number;
 }

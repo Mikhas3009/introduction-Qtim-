@@ -1,0 +1,391 @@
+openapi: 3.0.3
+info:
+  title: Introduction API
+  version: 1.0.0
+  description: |
+    REST API для статей и аутентификации.
+    Аутентификация — JWT в httpOnly cookie `accessToken`.
+
+servers:
+  - url: /
+    description: Default server
+
+tags:
+  - name: Articles
+  - name: Auth
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: accessToken
+      description: JWT access token в httpOnly cookie
+
+  parameters:
+    ArticleIdPath:
+      name: id
+      in: path
+      required: true
+      description: Идентификатор статьи (UUID v4)
+      schema: { type: string, format: uuid }
+
+    # Query-параметры списка
+    QQuery:
+      name: q
+      in: query
+      required: false
+      description: Поиск по подстроке (name/description)
+      schema: { type: string }
+    NameQuery:
+      name: name
+      in: query
+      required: false
+      description: Точное название
+      schema: { type: string, maxLength: 200 }
+    AuthorIdsQuery:
+      name: authorIds
+      in: query
+      required: false
+      description: >
+        Список авторов (UUID). Передавать повторяющимися параметрами:
+        `?authorIds=uuid1&authorIds=uuid2`
+      schema:
+        type: array
+        items: { type: string, format: uuid }
+      style: form
+      explode: true
+    IdsQuery:
+      name: ids
+      in: query
+      required: false
+      description: >
+        Список ID статей. Повторяющиеся параметры:
+        `?ids=uuidA&ids=uuidB`
+      schema:
+        type: array
+        items: { type: string, format: uuid }
+      style: form
+      explode: true
+    HasDescriptionQuery:
+      name: hasDescription
+      in: query
+      required: false
+      description: Фильтр по наличию/отсутствию описания
+      schema: { type: boolean }
+    CreatedFromQuery:
+      name: createdFrom
+      in: query
+      required: false
+      description: Дата/время «c» (ISO 8601)
+      schema: { type: string, format: date-time }
+    CreatedToQuery:
+      name: createdTo
+      in: query
+      required: false
+      description: Дата/время «по» (ISO 8601, не включительно)
+      schema: { type: string, format: date-time }
+    IncludeDeletedQuery:
+      name: includeDeleted
+      in: query
+      required: false
+      description: Включать soft-deleted статьи
+      schema: { type: boolean }
+    SortByQuery:
+      name: sortBy
+      in: query
+      required: false
+      description: Поле сортировки
+      schema:
+        type: string
+        enum: [createdAt, name]
+        default: createdAt
+    OrderQuery:
+      name: order
+      in: query
+      required: false
+      description: Порядок сортировки
+      schema:
+        type: string
+        enum: [ASC, DESC]
+        default: DESC
+    PageQuery:
+      name: page
+      in: query
+      required: false
+      description: Номер страницы (если передан `limit`)
+      schema: { type: integer, minimum: 1, default: 1 }
+    LimitQuery:
+      name: limit
+      in: query
+      required: false
+      description: Размер страницы. Если не задан — вернётся весь список (без пагинации)
+      schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        statusCode: { type: integer, example: 401 }
+        message: { type: string, example: 'Unauthorized' }
+        error: { type: string, example: 'Unauthorized' }
+
+    SuccessResponse:
+      type: object
+      properties:
+        success: { type: boolean, example: true }
+      required: [success]
+
+    UserPublic:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        login: { type: string }
+        name: { type: string }
+      required: [id, login, name]
+
+    Article:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string, maxLength: 200 }
+        description:
+          type: string
+          nullable: true
+        authorId: { type: string, format: uuid }
+        author:
+          $ref: '#/components/schemas/UserPublic'
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        deletedAt:
+          type: string
+          format: date-time
+          nullable: true
+      required: [id, name, authorId, createdAt, updatedAt]
+
+    ArticleListItem:
+      allOf:
+        - $ref: '#/components/schemas/Article'
+        - type: object
+          properties: {}
+
+paths:
+  /articles/{id}:
+    get:
+      tags: [Articles]
+      summary: Показать статью
+      description: Получить одну статью по идентификатору.
+      parameters:
+        - $ref: '#/components/parameters/ArticleIdPath'
+      responses:
+        '200':
+          description: ОК
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Article' }
+        '400':
+          description: Некорректный идентификатор
+          content:
+            application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } }
+        '404':
+          description: Статья не найдена
+          content:
+            application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } }
+
+    patch:
+      tags: [Articles]
+      summary: Обновить статью
+      description: |
+        Частичное обновление статьи. Требуется аутентификация и владение ресурсом.
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ArticleIdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              # частичное обновление — все поля опциональные
+              type: object
+              properties:
+                name: { type: string, maxLength: 200 }
+                description: { type: string, nullable: true }
+              additionalProperties: false
+      responses:
+        '200':
+          description: Успешно обновлено
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SuccessResponse' }
+        '400':
+          description: Неверные данные
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } }
+        '401':
+          description: Неавторизован
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } }
+        '403':
+          description: Доступ запрещён (не владелец)
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } }
+        '404':
+          description: Не найдено
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } }
+
+    delete:
+      tags: [Articles]
+      summary: Удалить статью
+      description: |
+        Удаление статьи. Требуется аутентификация и владение ресурсом.
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ArticleIdPath'
+      responses:
+        '200':
+          description: Успешно удалено
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SuccessResponse' }
+        '401':
+          description: Неавторизован
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } }
+        '403':
+          description: Доступ запрещён (не владелец)
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } }
+        '404':
+          description: Не найдено
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } }
+
+  /articles:
+    get:
+      tags: [Articles]
+      summary: Список статей
+      description: |
+        Список с фильтрами/сортировкой/пагинацией.
+        Если `limit` не передан — возвращается **весь** список (без пагинации).
+      parameters:
+        - $ref: '#/components/parameters/QQuery'
+        - $ref: '#/components/parameters/NameQuery'
+        - $ref: '#/components/parameters/AuthorIdsQuery'
+        - $ref: '#/components/parameters/IdsQuery'
+        - $ref: '#/components/parameters/HasDescriptionQuery'
+        - $ref: '#/components/parameters/CreatedFromQuery'
+        - $ref: '#/components/parameters/CreatedToQuery'
+        - $ref: '#/components/parameters/IncludeDeletedQuery'
+        - $ref: '#/components/parameters/SortByQuery'
+        - $ref: '#/components/parameters/OrderQuery'
+        - $ref: '#/components/parameters/PageQuery'
+        - $ref: '#/components/parameters/LimitQuery'
+      responses:
+        '200':
+          description: ОК
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/ArticleListItem' }
+        '400':
+          description: Неверные параметры
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } }
+
+    post:
+      tags: [Articles]
+      summary: Создать статью
+      description: |
+        Требуется аутентификация (JWT в cookie). Автор берётся из контекста.
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string, maxLength: 200 }
+                description: { type: string, nullable: true }
+              additionalProperties: false
+      responses:
+        '201':
+          description: Создано
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Article' }
+        '400':
+          description: Неверные данные
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } }
+        '401':
+          description: Неавторизован
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } }
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Логин
+      description: |
+        Успешный логин устанавливает httpOnly cookies:
+        `accessToken`, `refreshToken`. В теле: `{ "success": true }`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [login, password]
+              properties:
+                login: { type: string }
+                password: { type: string, format: password }
+              additionalProperties: false
+      responses:
+        '200':
+          description: ОК
+          headers:
+            Set-Cookie:
+              schema: { type: string }
+              description: 'Устанавливаются `accessToken`, `refreshToken`'
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SuccessResponse' }
+        '400':
+          description: Неверные данные
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } }
+        '401':
+          description: Неверные креды
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } }
+
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Регистрация
+      description: |
+        Успешная регистрация также логинит пользователя и ставит httpOnly cookies.
+        В теле: `{ "success": true }`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [login, password, name]
+              properties:
+                login: { type: string }
+                password: { type: string, format: password, minLength: 8 }
+                name: { type: string }
+              additionalProperties: false
+      responses:
+        '201':
+          description: Created
+          headers:
+            Set-Cookie:
+              schema: { type: string }
+              description: 'Устанавливаются `accessToken`, `refreshToken`'
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SuccessResponse' }
+        '400':
+          description: Неверные данные
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } }
+        '409':
+          description: Конфликт (логин занят)
+          content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } }

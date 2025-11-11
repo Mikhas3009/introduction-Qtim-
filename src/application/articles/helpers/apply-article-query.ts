@@ -1,9 +1,29 @@
 import { SelectQueryBuilder } from 'typeorm';
 import { ArticleEntity } from '../entities/article.entity';
-import { ArticleSortBy } from 'src/core/enums/articleSortBy.enum';
-import { SortOrder } from 'src/core/enums/sortBy.enum';
+import { ArticleSortByEnum } from 'src/core/enums/articleSortBy.enum';
+import { SortOrderEnum } from 'src/core/enums/sortBy.enum';
 import { ListArticleQueryDto } from '../dto/list/listArticle.query.dto';
 
+/**
+ * Применяет к запросу набор фильтров для выборки статей.
+ *
+ * Поддерживаемые поля `ListArticleQueryDto` (ожидаемые):
+ * - `ids?: string[]` — список UUID статей.
+ * - `authorIds?: string[]` — список UUID авторов.
+ * - `q?: string` — строка полнотекстового поиска по `name`/`description` (простая форма через ILIKE).
+ * - `name?: string` — точное совпадение названия.
+ * - `hasDescription?: boolean` — наличие (`true`) или отсутствие (`false`) описания.
+ * - `includeDeleted?: boolean` — включать soft-deleted записи (`deleted_at IS NOT NULL`). По умолчанию **false** — исключаем удалённые.
+ * - `createdFrom?: Date | string` — нижняя граница даты создания (включительно).
+ * - `createdTo?: Date | string` — верхняя граница даты создания (**исключительно**).
+ *
+ * @param qb    QueryBuilder, на который навешиваются условия.
+ * @param data  Объект с фильтрами (см. поля выше).
+ * @param alias Алиас таблицы/основной сущности (должен совпадать с тем, что использовался в createQueryBuilder). По умолчанию `'a'`.
+ * @returns Тот же `QueryBuilder` (для чейнинга).
+ *
+ *
+ */
 export function applyArticleFilters(
   qb: SelectQueryBuilder<ArticleEntity>,
   data: ListArticleQueryDto,
@@ -67,20 +87,45 @@ export function applyArticleFilters(
   return qb;
 }
 
+/**
+ * Применяет сортировку к запросу.
+ *
+ *
+ * @param qb    QueryBuilder.
+ * @param data  Объект запроса со свойствами:
+ *              - `sortBy?: ArticleSortBy` — поле сортировки (по умолчанию `createdAt`).
+ *              - `order?: SortOrder` — направление (`ASC`/`DESC`, по умолчанию `DESC`).
+ * @param alias Алиас сущности (тот, что использовался в createQueryBuilder). По умолчанию `'a'`.
+ * @returns Тот же `QueryBuilder` с применённым `orderBy`.
+ *
+ */
 export function applyArticleSort(
   qb: SelectQueryBuilder<ArticleEntity>,
   data: ListArticleQueryDto,
   alias = 'a',
 ) {
-  const sortMap: Record<ArticleSortBy, string> = {
+  const sortMap: Record<ArticleSortByEnum, string> = {
     createdAt: `${alias}.created_at`,
     name: `${alias}.article_name`,
   };
-  const column = sortMap[data.sortBy ?? ArticleSortBy.createdAt];
-  const order = data.order ?? SortOrder.DESC;
+  const column = sortMap[data.sortBy ?? ArticleSortByEnum.createdAt];
+  const order = data.order ?? SortOrderEnum.DESC;
   return qb.orderBy(column, order);
 }
 
+/**
+ * Применяет пагинацию к запросу.
+ *
+ * Правила:
+ * - Если `limit` не указан или falsy — пагинация **не применяется**, возвращается исходный QB.
+ *
+ * @typeParam T — тип сущности в QueryBuilder.
+ * @param qb   QueryBuilder.
+ * @param data Объект запроса со свойствами:
+ *             - `limit?: number`
+ *             - `page?: number` (1-базный)
+ * @returns Тот же `QueryBuilder` с применёнными `take/skip` при наличии `limit`.
+ */
 export function applyPagination<T>(
   qb: SelectQueryBuilder<T>,
   data: ListArticleQueryDto,

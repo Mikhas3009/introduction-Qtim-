@@ -7,7 +7,11 @@ export function setCacheHeader(
   cached: any,
 ): void {
   const httpAdapter = httpAdapterHost?.httpAdapter;
-  if (!httpAdapter) return;
+
+  if (!httpAdapter) {
+    return;
+  }
+
   const response = context.switchToHttp().getResponse();
   httpAdapter.setHeader(
     response,

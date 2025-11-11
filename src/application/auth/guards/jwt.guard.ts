@@ -8,6 +8,15 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 
+/**
+ * Guard, проверяющий наличие и валидность access-JWT в cookie `accessToken`.
+ *
+ * Логика:
+ * 1) Достаёт значение из `req.cookies.accessToken`.
+ * 2) Верифицирует токен через {@link JwtService.verify} с секретом `JWT_SECRET`.
+ * 3) Кладёт декодированный payload в `req.user` для дальнейших обработчиков.
+ * 4) Возвращает `true` при успехе, иначе бросает `UnauthorizedException`.
+ */
 @Injectable()
 export class JwtGuard implements CanActivate {
   constructor(

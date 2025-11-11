@@ -1,3 +1,4 @@
+/**Текущий авторизованный пользователь */
 export interface IAuthUser {
   login: string;
   id: string;

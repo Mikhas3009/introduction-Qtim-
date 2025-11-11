@@ -1,9 +1,16 @@
-import { HttpStatus } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Response } from 'express';
 import { toMs } from 'ms-typescript';
 import { ITokensInterface } from 'src/core/interfaces/jwtPayload.interface';
 
+/**
+ * Устанавливает refresh/access токены в cookie ответа.
+ *
+ * Источники сроков:
+ * - `JWT_REFRESH_EXPIRES_IN` — длительность refresh-cookie.
+ * - `JWT_EXPIRES_IN` — длительность access-cookie.
+ *
+ */
 export const setTokenCookie = async (
   res: Response,
   tokens: ITokensInterface,
@@ -26,7 +33,5 @@ export const setTokenCookie = async (
       expires: new Date(
         Date.now() + toMs(configService.getOrThrow<string>('JWT_EXPIRES_IN')),
       ),
-    })
-    .status(HttpStatus.OK)
-    .send({ success: true });
+    });
 };

@@ -3,17 +3,21 @@ import { CacheStore } from '../interfaces/cacheStore.interface';
 import { wrapValue } from '../helpers/wrapValue';
 import { matchPattern } from '../helpers/matchPattern';
 
-/** Реализация CacheStore на Redis (ioredis) */
+/**
+ * Реализация {@link CacheStore} на базе Redis (ioredis).
+ *
+ * Хранит значения в виде «конверта» `CacheEnvelope` (`{ data, cachedAt }`).
+ * При записи TTL (мс) конвертируется в секунды и передаётся в Redis как `EX`.
+ */
 export class RedisCacheStore implements CacheStore {
   private readonly client: Redis;
   private readonly defaultTtl: number;
 
-  constructor(options: Redis | RedisOptions, defaultTtl: number = 60_000) {
+  constructor(options: Redis | RedisOptions, defaultTtl: number = 600_000) {
     this.client = options instanceof Redis ? options : new Redis(options);
     this.defaultTtl = defaultTtl;
   }
 
-  // Возвращаем обобщённый T, чтобы соответствовать интерфейсу CacheStore
   async get<T = any>(key: string): Promise<T | undefined> {
     const raw = await this.client.get(key);
     if (raw == null) return undefined;
@@ -24,7 +28,6 @@ export class RedisCacheStore implements CacheStore {
     }
   }
 
-  // Сигнатура set совпадает с интерфейсом; значения всегда оборачиваем перед записью
   async set<T = any>(key: string, value: T, ttl?: number): Promise<boolean> {
     const envelope = wrapValue(value as any);
     const expireSeconds = Math.max(
@@ -38,8 +41,6 @@ export class RedisCacheStore implements CacheStore {
   async del(key: string): Promise<boolean> {
     return (await this.client.del(key)) > 0;
   }
-
-  /** Удаление по шаблону (SCAN + MATCH + DEL) */
   async delByPattern(pattern: string): Promise<number> {
     let cursor = '0';
     let totalDeleted = 0;

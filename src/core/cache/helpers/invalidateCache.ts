@@ -6,7 +6,6 @@ export async function invalidateCache(
   config: { keys: string[]; patterns: string[] },
 ): Promise<void> {
   const { keys, patterns } = config;
-
   for (const key of keys) {
     try {
       await cacheService.del(key);

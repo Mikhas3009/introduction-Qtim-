@@ -25,4 +25,4 @@ import { RedisCacheModule } from 'src/core/cache/redisCache.module';
   controllers: [ArticlesController],
   providers: [ArticlesService],
 })
-export class ArticlesModule { }
+export class ArticlesModule {}
